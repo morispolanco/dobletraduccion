@@ -36,18 +36,25 @@ def translate_text(text, target_language):
 
 # Function to process the Word document
 def process_document(doc_path):
-    doc = Document(doc_path)
-    paragraphs = []
-    for para in doc.paragraphs:
-        paragraphs.append(para)
-    return paragraphs, doc
+    try:
+        doc = Document(doc_path)
+        paragraphs = []
+        for para in doc.paragraphs:
+            paragraphs.append(para)
+        return paragraphs, doc
+    except Exception as e:
+        st.error(f"Error processing the document: {e}")
+        return None, None
 
 # Function to save the corrected document
 def save_translated_document(doc, corrected_paragraphs, output_path):
-    for i, para in enumerate(doc.paragraphs):
-        if i < len(corrected_paragraphs):
-            para.text = corrected_paragraphs[i]
-    doc.save(output_path)
+    try:
+        for i, para in enumerate(doc.paragraphs):
+            if i < len(corrected_paragraphs):
+                para.text = corrected_paragraphs[i]
+        doc.save(output_path)
+    except Exception as e:
+        st.error(f"Error saving the corrected document: {e}")
 
 # Streamlit page configuration
 st.set_page_config(page_title="Text Correction Tool", page_icon="📝")
@@ -58,12 +65,20 @@ uploaded_file = st.file_uploader("Upload a Word document (.docx) for correction"
 if uploaded_file is not None:
     # Save the uploaded file temporarily
     temp_input_path = "temp_input.docx"
-    with open(temp_input_path, "wb") as f:
-        f.write(uploaded_file.getbuffer())
-    
+    try:
+        with open(temp_input_path, "wb") as f:
+            f.write(uploaded_file.getbuffer())
+    except Exception as e:
+        st.error(f"Error saving the uploaded file: {e}")
+        st.stop()
+
     # Process the document
     paragraphs, doc = process_document(temp_input_path)
     
+    if paragraphs is None or doc is None:
+        st.error("The document could not be processed. Please ensure the file is a valid .docx document.")
+        st.stop()
+
     # Detect the original language (assuming the user provides it)
     original_language = st.text_input("Enter the primary language of the document (e.g., 'English'):", value="English")
     
@@ -80,6 +95,8 @@ if uploaded_file is not None:
                 corrected_paragraphs.append(corrected_text)
                 progress = (i + 1) / total_paragraphs
                 progress_bar.progress(progress, text=f"Progress: {int(progress * 100)}%")
+            else:
+                st.warning(f"Failed to correct paragraph {i + 1}. Skipping...")
         
         if len(corrected_paragraphs) == total_paragraphs:
             st.success("First stage of correction completed.")
@@ -93,6 +110,8 @@ if uploaded_file is not None:
                     final_corrected_paragraphs.append(final_correction)
                     progress = (i + 1) / total_paragraphs
                     progress_bar.progress(progress, text=f"Progress: {int(progress * 100)}%")
+                else:
+                    st.warning(f"Failed to finalize correction for paragraph {i + 1}. Skipping...")
             
             if len(final_corrected_paragraphs) == total_paragraphs:
                 st.success("Second stage of correction completed.")
@@ -102,14 +121,20 @@ if uploaded_file is not None:
                 save_translated_document(doc, final_corrected_paragraphs, temp_output_path)
                 
                 # Allow the user to download the corrected file
-                with open(temp_output_path, "rb") as f:
-                    st.download_button(
-                        label="Download Corrected Document",
-                        data=f,
-                        file_name="corrected_document.docx",
-                        mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                    )
+                try:
+                    with open(temp_output_path, "rb") as f:
+                        st.download_button(
+                            label="Download Corrected Document",
+                            data=f,
+                            file_name="corrected_document.docx",
+                            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                        )
+                except Exception as e:
+                    st.error(f"Error preparing the corrected document for download: {e}")
                 
                 # Clean up temporary files
-                os.remove(temp_input_path)
-                os.remove(temp_output_path)
+                try:
+                    os.remove(temp_input_path)
+                    os.remove(temp_output_path)
+                except Exception as e:
+                    st.warning(f"Could not clean up temporary files: {e}")
