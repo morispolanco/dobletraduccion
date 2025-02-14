@@ -3,7 +3,6 @@ from docx import Document
 import requests
 import os
 
-# Function to translate text using the DashScope API
 def translate_text(text, target_language):
     api_key = st.secrets["DASHSCOPE_API_KEY"]
     url = "https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions"
@@ -27,14 +26,12 @@ def translate_text(text, target_language):
     }
     response = requests.post(url, headers=headers, json=data)
     if response.status_code == 200:
-        # Extract the translated text
         translated_text = response.json()["choices"][0]["message"]["content"]
         return translated_text
     else:
         st.error(f"Error in translation: {response.text}")
         return None
 
-# Function to process the Word document
 def process_document(doc_path):
     try:
         doc = Document(doc_path)
@@ -46,7 +43,6 @@ def process_document(doc_path):
         st.error(f"Error processing the document: {e}")
         return None, None
 
-# Function to save the corrected document
 def save_translated_document(doc, corrected_paragraphs, output_path):
     try:
         for i, para in enumerate(doc.paragraphs):
@@ -56,37 +52,30 @@ def save_translated_document(doc, corrected_paragraphs, output_path):
     except Exception as e:
         st.error(f"Error saving the corrected document: {e}")
 
-# Streamlit page configuration
 st.set_page_config(page_title="Text Correction Tool", page_icon="📝")
 st.title("Spelling, Grammar, and Style Corrector 📝")
 
-# File upload
 uploaded_file = st.file_uploader("Upload a Word document (.docx) for correction", type=["docx"])
 
 if uploaded_file is not None:
-    # Validate that the file is not empty
     if uploaded_file.size == 0:
         st.error("The uploaded file is empty. Please upload a valid .docx file.")
         st.stop()
 
-    # Save the uploaded file temporarily
     temp_input_path = "temp_input.docx"
     try:
         with open(temp_input_path, "wb") as f:
             f.write(uploaded_file.getbuffer())
-        st.success("File uploaded successfully!")
     except Exception as e:
         st.error(f"Error saving the uploaded file: {e}")
         st.stop()
 
-    # Process the document
     paragraphs, doc = process_document(temp_input_path)
     
     if paragraphs is None or doc is None:
         st.error("The document could not be processed. Please ensure the file is a valid .docx document.")
         st.stop()
 
-    # Detect the original language (assuming the user provides it)
     original_language = st.text_input("Enter the primary language of the document (e.g., 'English'):", value="English")
     
     if st.button("Correct Document"):
@@ -94,10 +83,9 @@ if uploaded_file is not None:
         progress_bar = st.progress(0)
         corrected_paragraphs = []
         
-        # First pass: Spelling and grammar corrections
         st.info("Performing spelling and grammar corrections...")
         for i, para in enumerate(paragraphs):
-            corrected_text = translate_text(para.text, "English")  # Intermediate translation for improved accuracy
+            corrected_text = translate_text(para.text, "English")
             if corrected_text:
                 corrected_paragraphs.append(corrected_text)
                 progress = (i + 1) / total_paragraphs
@@ -108,7 +96,6 @@ if uploaded_file is not None:
         if len(corrected_paragraphs) == total_paragraphs:
             st.success("First stage of correction completed.")
             
-            # Second pass: Style improvement and adjustment back to the original language
             st.info("Enhancing style and adjusting back to the original language...")
             final_corrected_paragraphs = []
             for i, para in enumerate(corrected_paragraphs):
@@ -123,11 +110,9 @@ if uploaded_file is not None:
             if len(final_corrected_paragraphs) == total_paragraphs:
                 st.success("Second stage of correction completed.")
                 
-                # Save the corrected document
                 temp_output_path = "corrected_output.docx"
                 save_translated_document(doc, final_corrected_paragraphs, temp_output_path)
                 
-                # Allow the user to download the corrected file
                 try:
                     with open(temp_output_path, "rb") as f:
                         st.download_button(
@@ -139,7 +124,6 @@ if uploaded_file is not None:
                 except Exception as e:
                     st.error(f"Error preparing the corrected document for download: {e}")
                 
-                # Clean up temporary files
                 try:
                     os.remove(temp_input_path)
                     os.remove(temp_output_path)
