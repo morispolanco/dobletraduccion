@@ -23,7 +23,7 @@ def translate_text(text, target_language):
                 "content": prompt
             }
         ],
-        "model": "llama-3.3-70b-versatile",
+        "model": "llama3-70b-8192",
         "temperature": 0.33,
         "max_completion_tokens": 29900,
         "top_p": 1,
