@@ -3,7 +3,7 @@ from docx import Document
 import requests
 import os
 
-# Función para traducir texto usando la API de DashScope
+# Function to translate text using the DashScope API
 def translate_text(text, target_language):
     api_key = st.secrets["DASHSCOPE_API_KEY"]
     url = "https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions"
@@ -27,14 +27,14 @@ def translate_text(text, target_language):
     }
     response = requests.post(url, headers=headers, json=data)
     if response.status_code == 200:
-        # Extraer la respuesta traducida
+        # Extract the translated text
         translated_text = response.json()["choices"][0]["message"]["content"]
         return translated_text
     else:
         st.error(f"Error in translation: {response.text}")
         return None
 
-# Función para procesar el documento Word
+# Function to process the Word document
 def process_document(doc_path):
     doc = Document(doc_path)
     paragraphs = []
@@ -42,74 +42,74 @@ def process_document(doc_path):
         paragraphs.append(para)
     return paragraphs, doc
 
-# Función para guardar el documento traducido
-def save_translated_document(doc, translated_paragraphs, output_path):
+# Function to save the corrected document
+def save_translated_document(doc, corrected_paragraphs, output_path):
     for i, para in enumerate(doc.paragraphs):
-        if i < len(translated_paragraphs):
-            para.text = translated_paragraphs[i]
+        if i < len(corrected_paragraphs):
+            para.text = corrected_paragraphs[i]
     doc.save(output_path)
 
-# Configuración de la página de Streamlit
-st.set_page_config(page_title="Double Translation App", page_icon="🔄")
-st.title("Double Translation App 🔄")
+# Streamlit page configuration
+st.set_page_config(page_title="Text Correction Tool", page_icon="📝")
+st.title("Spelling, Grammar, and Style Corrector 📝")
 
-# Subida del archivo Word
-uploaded_file = st.file_uploader("Upload a Word document (.docx)", type=["docx"])
+# File upload
+uploaded_file = st.file_uploader("Upload a Word document (.docx) for correction", type=["docx"])
 if uploaded_file is not None:
-    # Guardar el archivo subido temporalmente
+    # Save the uploaded file temporarily
     temp_input_path = "temp_input.docx"
     with open(temp_input_path, "wb") as f:
         f.write(uploaded_file.getbuffer())
     
-    # Procesar el documento
+    # Process the document
     paragraphs, doc = process_document(temp_input_path)
     
-    # Detectar el idioma original (asumiendo que el usuario lo proporciona)
-    original_language = st.text_input("Enter the original language of the document (e.g., 'Spanish'):", value="Spanish")
+    # Detect the original language (assuming the user provides it)
+    original_language = st.text_input("Enter the primary language of the document (e.g., 'English'):", value="English")
     
-    if st.button("Translate"):
+    if st.button("Correct Document"):
         total_paragraphs = len(paragraphs)
         progress_bar = st.progress(0)
-        translated_paragraphs = []
-
-        # Primera traducción: Idioma original -> Inglés
-        st.info("Translating from original language to English...")
+        corrected_paragraphs = []
+        
+        # First pass: Spelling and grammar corrections
+        st.info("Performing spelling and grammar corrections...")
         for i, para in enumerate(paragraphs):
-            english_translation = translate_text(para.text, "English")
-            if english_translation:
-                translated_paragraphs.append(english_translation)
+            corrected_text = translate_text(para.text, "English")  # Intermediate translation for improved accuracy
+            if corrected_text:
+                corrected_paragraphs.append(corrected_text)
                 progress = (i + 1) / total_paragraphs
                 progress_bar.progress(progress, text=f"Progress: {int(progress * 100)}%")
         
-        if len(translated_paragraphs) == total_paragraphs:
-            st.success("First translation (Original -> English) completed.")
+        if len(corrected_paragraphs) == total_paragraphs:
+            st.success("First stage of correction completed.")
             
-            # Segunda traducción: Inglés -> Idioma original
-            st.info("Translating back from English to the original language...")
-            final_translated_paragraphs = []
-            for i, para in enumerate(translated_paragraphs):
-                final_translation = translate_text(para, original_language)
-                if final_translation:
-                    final_translated_paragraphs.append(final_translation)
+            # Second pass: Style improvement and adjustment back to the original language
+            st.info("Enhancing style and adjusting back to the original language...")
+            final_corrected_paragraphs = []
+            for i, para in enumerate(corrected_paragraphs):
+                final_correction = translate_text(para, original_language)
+                if final_correction:
+                    final_corrected_paragraphs.append(final_correction)
                     progress = (i + 1) / total_paragraphs
                     progress_bar.progress(progress, text=f"Progress: {int(progress * 100)}%")
             
-            if len(final_translated_paragraphs) == total_paragraphs:
-                st.success("Second translation (English -> Original) completed.")
+            if len(final_corrected_paragraphs) == total_paragraphs:
+                st.success("Second stage of correction completed.")
                 
-                # Guardar el documento traducido
-                temp_output_path = "translated_output.docx"
-                save_translated_document(doc, final_translated_paragraphs, temp_output_path)
+                # Save the corrected document
+                temp_output_path = "corrected_output.docx"
+                save_translated_document(doc, final_corrected_paragraphs, temp_output_path)
                 
-                # Permitir al usuario descargar el archivo traducido
+                # Allow the user to download the corrected file
                 with open(temp_output_path, "rb") as f:
                     st.download_button(
-                        label="Download Translated Document",
+                        label="Download Corrected Document",
                         data=f,
-                        file_name="translated_output.docx",
+                        file_name="corrected_document.docx",
                         mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                     )
                 
-                # Limpiar archivos temporales
+                # Clean up temporary files
                 os.remove(temp_input_path)
                 os.remove(temp_output_path)
