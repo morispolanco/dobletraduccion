@@ -37,17 +37,16 @@ def translate_text(text, target_language):
 # Función para procesar el documento Word
 def process_document(doc_path):
     doc = Document(doc_path)
-    original_text = []
+    paragraphs = []
     for para in doc.paragraphs:
-        original_text.append(para.text)
-    return "\n".join(original_text), doc
+        paragraphs.append(para)
+    return paragraphs, doc
 
 # Función para guardar el documento traducido
-def save_translated_document(doc, translated_text, output_path):
-    paragraphs = translated_text.split("\n")
+def save_translated_document(doc, translated_paragraphs, output_path):
     for i, para in enumerate(doc.paragraphs):
-        if i < len(paragraphs):
-            para.text = paragraphs[i]
+        if i < len(translated_paragraphs):
+            para.text = translated_paragraphs[i]
     doc.save(output_path)
 
 # Configuración de la página de Streamlit
@@ -63,29 +62,44 @@ if uploaded_file is not None:
         f.write(uploaded_file.getbuffer())
     
     # Procesar el documento
-    original_text, doc = process_document(temp_input_path)
+    paragraphs, doc = process_document(temp_input_path)
     
     # Detectar el idioma original (asumiendo que el usuario lo proporciona)
     original_language = st.text_input("Enter the original language of the document (e.g., 'Spanish'):", value="Spanish")
     
     if st.button("Translate"):
+        total_paragraphs = len(paragraphs)
+        progress_bar = st.progress(0)
+        translated_paragraphs = []
+
         # Primera traducción: Idioma original -> Inglés
         st.info("Translating from original language to English...")
-        english_translation = translate_text(original_text, "English")
+        for i, para in enumerate(paragraphs):
+            english_translation = translate_text(para.text, "English")
+            if english_translation:
+                translated_paragraphs.append(english_translation)
+                progress = (i + 1) / total_paragraphs
+                progress_bar.progress(progress, text=f"Progress: {int(progress * 100)}%")
         
-        if english_translation:
+        if len(translated_paragraphs) == total_paragraphs:
             st.success("First translation (Original -> English) completed.")
             
             # Segunda traducción: Inglés -> Idioma original
             st.info("Translating back from English to the original language...")
-            final_translation = translate_text(english_translation, original_language)
+            final_translated_paragraphs = []
+            for i, para in enumerate(translated_paragraphs):
+                final_translation = translate_text(para, original_language)
+                if final_translation:
+                    final_translated_paragraphs.append(final_translation)
+                    progress = (i + 1) / total_paragraphs
+                    progress_bar.progress(progress, text=f"Progress: {int(progress * 100)}%")
             
-            if final_translation:
+            if len(final_translated_paragraphs) == total_paragraphs:
                 st.success("Second translation (English -> Original) completed.")
                 
                 # Guardar el documento traducido
                 temp_output_path = "translated_output.docx"
-                save_translated_document(doc, final_translation, temp_output_path)
+                save_translated_document(doc, final_translated_paragraphs, temp_output_path)
                 
                 # Permitir al usuario descargar el archivo traducido
                 with open(temp_output_path, "rb") as f:
