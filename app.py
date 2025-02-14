@@ -13,7 +13,7 @@ def translate_text(text, target_language):
     }
     prompt = f"Translate the following text to {target_language}: {text}"
     data = {
-        "model": "deepseek-r1-distill-llama-70b",
+        "model": "llama-3.3-70b",
         "stream": True,
         "max_tokens": 7271,
         "temperature": 0.2,
