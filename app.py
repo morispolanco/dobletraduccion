@@ -23,10 +23,10 @@ def translate_text(text, target_language):
                 "content": prompt
             }
         ],
-        "model": "llama3-70b-8192",
-        "temperature": 0.33,
-        "max_completion_tokens": 29900,
-        "top_p": 1,
+        "model": "qwen-2.5-32b",
+        "temperature": 0.11,
+        "max_completion_tokens": 118540,
+        "top_p": 0.95,
         "stream": True,
         "stop": None
     }
