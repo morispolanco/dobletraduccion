@@ -1,7 +1,6 @@
 import streamlit as st
 from docx import Document
 import requests
-import json
 import os
 
 # Función para traducir texto usando la API de Cerebras
@@ -14,9 +13,9 @@ def translate_text(text, target_language):
     }
     prompt = f"Translate the following text to {target_language}: {text}"
     data = {
-        "model": "llama3.1-8b",
-        "stream": False,
-        "max_tokens": 1024,
+        "model": "deepseek-r1-distill-llama-70b",
+        "stream": True,
+        "max_tokens": 7271,
         "temperature": 0.2,
         "top_p": 1,
         "messages": [
@@ -30,8 +29,9 @@ def translate_text(text, target_language):
             }
         ]
     }
-    response = requests.post(url, headers=headers, data=json.dumps(data))
+    response = requests.post(url, headers=headers, json=data)
     if response.status_code == 200:
+        # Extraer la respuesta traducida
         translated_text = response.json()["choices"][0]["message"]["content"]
         return translated_text
     else:
