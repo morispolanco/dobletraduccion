@@ -27,7 +27,8 @@ def correct_text(text):
     response = requests.post(url, headers=headers, json=data)
     if response.status_code == 200:
         corrected_text = response.json()["choices"][0]["message"]["content"]
-        return corrected_text
+        # Ensure no additional comments are included in the output
+        return corrected_text.strip()
     else:
         st.error(f"Error in correction: {response.text}")
         return None
