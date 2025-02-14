@@ -3,32 +3,27 @@ from docx import Document
 import requests
 import os
 
-# Función para traducir texto usando la API de Groq
+# Función para traducir texto usando la API de DashScope
 def translate_text(text, target_language):
-    api_key = st.secrets["GROQ_API_KEY"]
-    url = "https://api.groq.com/openai/v1/chat/completions"
+    api_key = st.secrets["DASHSCOPE_API_KEY"]
+    url = "https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions"
     headers = {
-        "Content-Type": "application/json",
-        "Authorization": f"Bearer {api_key}"
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json"
     }
     prompt = f"Translate the following text to {target_language}: {text}"
     data = {
+        "model": "qwen-turbo",
         "messages": [
             {
                 "role": "system",
-                "content": "You are a translation model."
+                "content": "You are a helpful assistant."
             },
             {
                 "role": "user",
                 "content": prompt
             }
-        ],
-        "model": "qwen-2.5-32b",
-        "temperature": 0.11,
-        "max_completion_tokens": 118540,
-        "top_p": 0.95,
-        "stream": True,
-        "stop": None
+        ]
     }
     response = requests.post(url, headers=headers, json=data)
     if response.status_code == 200:
