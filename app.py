@@ -3,21 +3,16 @@ from docx import Document
 import requests
 import os
 
-# Función para traducir texto usando la API de Cerebras
+# Función para traducir texto usando la API de Groq
 def translate_text(text, target_language):
-    api_key = st.secrets["CEREBRAS_API_KEY"]
-    url = "https://api.cerebras.ai/v1/chat/completions"
+    api_key = st.secrets["GROQ_API_KEY"]
+    url = "https://api.groq.com/openai/v1/chat/completions"
     headers = {
         "Content-Type": "application/json",
         "Authorization": f"Bearer {api_key}"
     }
     prompt = f"Translate the following text to {target_language}: {text}"
     data = {
-        "model": "llama-3.3-70b",
-        "stream": True,
-        "max_tokens": 7271,
-        "temperature": 0.2,
-        "top_p": 1,
         "messages": [
             {
                 "role": "system",
@@ -27,7 +22,13 @@ def translate_text(text, target_language):
                 "role": "user",
                 "content": prompt
             }
-        ]
+        ],
+        "model": "llama-3.3-70b-versatile",
+        "temperature": 0.33,
+        "max_completion_tokens": 29900,
+        "top_p": 1,
+        "stream": True,
+        "stop": None
     }
     response = requests.post(url, headers=headers, json=data)
     if response.status_code == 200:
