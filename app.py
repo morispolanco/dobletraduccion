@@ -62,12 +62,19 @@ st.title("Spelling, Grammar, and Style Corrector 📝")
 
 # File upload
 uploaded_file = st.file_uploader("Upload a Word document (.docx) for correction", type=["docx"])
+
 if uploaded_file is not None:
+    # Validate that the file is not empty
+    if uploaded_file.size == 0:
+        st.error("The uploaded file is empty. Please upload a valid .docx file.")
+        st.stop()
+
     # Save the uploaded file temporarily
     temp_input_path = "temp_input.docx"
     try:
         with open(temp_input_path, "wb") as f:
             f.write(uploaded_file.getbuffer())
+        st.success("File uploaded successfully!")
     except Exception as e:
         st.error(f"Error saving the uploaded file: {e}")
         st.stop()
@@ -138,3 +145,5 @@ if uploaded_file is not None:
                     os.remove(temp_output_path)
                 except Exception as e:
                     st.warning(f"Could not clean up temporary files: {e}")
+else:
+    st.warning("Please upload a Word document (.docx) to proceed.")
